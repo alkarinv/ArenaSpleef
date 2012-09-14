@@ -1,0 +1,8 @@
+name: ArenaSpleef
+main: mc.arena.spleef.ArenaSpleef
+version: 1.0.0
+depend: [BattleArena, WorldGuard, WorldEdit]
+authors: [alkarin_v]
+
+commands:
+   spleef:
