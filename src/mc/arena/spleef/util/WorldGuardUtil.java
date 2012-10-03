@@ -3,6 +3,7 @@ package mc.arena.spleef.util;
 import java.io.File;
 import java.io.IOException;
 
+import mc.alk.arena.util.Log;
 import mc.alk.arena.util.MessageUtil;
 import mc.arena.spleef.Defaults;
 
@@ -15,6 +16,7 @@ import org.bukkit.plugin.Plugin;
 
 import com.sk89q.minecraft.util.commands.CommandContext;
 import com.sk89q.worldedit.BlockVector;
+import com.sk89q.worldedit.CuboidClipboard;
 import com.sk89q.worldedit.DisallowedItemException;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.LocalConfiguration;
@@ -29,9 +31,11 @@ import com.sk89q.worldedit.bukkit.BukkitUtil;
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;
 import com.sk89q.worldedit.bukkit.selections.CuboidSelection;
 import com.sk89q.worldedit.bukkit.selections.Selection;
+import com.sk89q.worldedit.commands.SchematicCommands;
 import com.sk89q.worldedit.data.DataException;
 import com.sk89q.worldedit.patterns.Pattern;
 import com.sk89q.worldedit.patterns.SingleBlockPattern;
+import com.sk89q.worldedit.regions.Region;
 import com.sk89q.worldedit.schematic.SchematicFormat;
 import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
 import com.sk89q.worldguard.protection.databases.ProtectionDatabaseException;
@@ -57,9 +61,36 @@ public class WorldGuardUtil {
 	}
 
 
-	public static boolean pasteSchematic(Player p, Location loc, String schematic){
+	public static boolean saveSchematic(Player p, String schematicName){
 		CommandContext cc = null;
-		String args[] = {"load", schematic};
+		final LocalSession session = wep.getSession(p);
+		final BukkitPlayer lPlayer = wep.wrapPlayer(p);
+		EditSession editSession = session.createEditSession(lPlayer);
+
+		try {
+	        Region region = session.getSelection(lPlayer.getWorld());
+	        Vector min = region.getMinimumPoint();
+	        Vector max = region.getMaximumPoint();
+	        CuboidClipboard clipboard = new CuboidClipboard(
+	                max.subtract(min).add(new Vector(1, 1, 1)),
+	                min, new Vector(0,0,0));
+	        clipboard.copy(editSession);
+	        session.setClipboard(clipboard);
+			
+			SchematicCommands sc = new SchematicCommands(wep.getWorldEdit());
+			String args2[] = {"save", "mcedit", schematicName};
+			cc = new CommandContext(args2);
+			sc.save(cc, session, lPlayer, editSession);
+			return true;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
+	}
+
+	public static boolean pasteSchematic(Player p, Location loc, String schematicName){
+		CommandContext cc = null;
+		String args[] = {"load", schematicName};
 		final WorldEdit we = wep.getWorldEdit();
 		final LocalSession session = wep.getSession(p);
 		final BukkitPlayer lPlayer = wep.wrapPlayer(p);
@@ -74,6 +105,26 @@ public class WorldGuardUtil {
 			return false;
 		}
 	}
+	
+	public static boolean pasteSchematic(CommandSender sender, ProtectedRegion pr, String schematic, World world) {
+		CommandContext cc = null;
+		String args[] = {"load", schematic};
+		final WorldEdit we = wep.getWorldEdit();
+		LocalPlayer bcs = new ConsolePlayer(wep,wep.getServerInterface(),sender, world);
+		
+		final LocalSession session = wep.getWorldEdit().getSession(bcs);
+
+		EditSession editSession = session.createEditSession(bcs);
+		Vector pos = new Vector(pr.getMinimumPoint());
+		try {
+			cc = new CommandContext(args);
+			return loadAndPaste(cc, we, session, bcs,editSession,pos);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
+	}
+
 	/**
 	 * This is just copied and pasted from world edit source, with small changes to also paste
 	 * @param args
@@ -96,34 +147,34 @@ public class WorldGuardUtil {
 			String dirPath = dir.getCanonicalPath();
 
 			if (!filePath.substring(0, dirPath.length()).equals(dirPath)) {
-				player.printError("Schematic could not read or it does not exist.");
+				printError(player,"Schematic could not read or it does not exist.");
 				return false;
 			} 
 			SchematicFormat format = SchematicFormat.getFormat(f);
 			if (format == null) {
-				player.printError("Unknown schematic format for file" + f);
+				printError(player,"Unknown schematic format for file" + f);
 				return false;
 			}
 
 			if (!filePath.substring(0, dirPath.length()).equals(dirPath)) {
-				player.printError("Schematic could not read or it does not exist.");
+				printError(player,"Schematic could not read or it does not exist.");
 			} else {
 				session.setClipboard(format.load(f));
-				WorldEdit.logger.info(player.getName() + " loaded " + filePath);
-				player.print(filePath + " loaded");
+//				WorldEdit.logger.info(player.getName() + " loaded " + filePath);
+//				print(player,filePath + " loaded");
 			}
 			session.getClipboard().paste(editSession, pos, false, true);
-			WorldEdit.logger.info(player.getName() + " pasted schematic" + filePath +"  at " + pos);            
+//			WorldEdit.logger.info(player.getName() + " pasted schematic" + filePath +"  at " + pos);            
 		} catch (DataException e) {
-			player.printError("Load error: " + e.getMessage());
+			printError(player,"Load error: " + e.getMessage());
 		} catch (IOException e) {
-			player.printError("Schematic could not read or it does not exist: " + e.getMessage());
+			printError(player,"Schematic could not read or it does not exist: " + e.getMessage());
 		} catch (Exception e){
-			player.printError("Error : " + e.getMessage());
+			e.printStackTrace();
+			printError(player,"Error : " + e.getMessage());
 		}
 		return true;
 	}
-
 	public static ProtectedRegion setBlocks(World w, String region, int type, int data) throws Exception{
 		RegionManager rm = wgp.getRegionManager(w);
 		if (rm == null)
@@ -153,6 +204,7 @@ public class WorldGuardUtil {
 		pr.setFlag(flag, value);
 		rm.save();
 	}
+	
 	public static void setFlag(World w, StateFlag flag, State value, ProtectedRegion pr) throws Exception {
 		RegionManager rm = wgp.getRegionManager(w);
 		if (rm == null)
@@ -243,5 +295,11 @@ public class WorldGuardUtil {
 
 
 
-
+	private static void printError(LocalPlayer player, String msg){
+		if (player == null){
+			Log.err(msg);	
+		} else {
+			player.printError(msg);
+		}		
+	}
 }

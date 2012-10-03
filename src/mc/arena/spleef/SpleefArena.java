@@ -1,9 +1,10 @@
 package mc.arena.spleef;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-import mc.alk.arena.Defaults;
 import mc.alk.arena.objects.arenas.Arena;
 import mc.alk.arena.objects.events.MatchEventHandler;
 import mc.alk.arena.serializers.Persist;
@@ -13,9 +14,9 @@ import mc.arena.spleef.util.WorldGuardUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockBreakEvent;
 
-import com.sk89q.worldedit.blocks.BaseBlock;
 import com.sk89q.worldedit.bukkit.selections.Selection;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 
@@ -24,89 +25,119 @@ public class SpleefArena extends Arena{
 	String worldName; /// What world this spleef is in
 
 	@Persist
-	String layerName; /// What is our layer name
+	List<String> layerNames; /// What are our layer names
 
 	@Persist
-	int type; /// what type to change the blocks into
+	Map<String, Integer> regenTimes;
 
-	@Persist
-	int data; /// what data value to change the blocks into
+	Map<String, Integer> regenTimers; /// list of regen timers
 
-	Integer timerid = null;  /// our local bukkit timer, for regening the spleef layer
+	List<ProtectedRegion> regions; /// Our protected region layers
 
-	ProtectedRegion pr; /// Our protected region layer
+	World world; /// what world our spleef is in
 
 	@Override
 	public void onOpen(){
-		cancelTimer();
+		cancelTimers();
 		initLayers();
 	}
 
 	@Override
 	public void onStart(){
-		final World w = Bukkit.getWorld(worldName);
-		/// Set the timer to regen the blocks if someone has walled themselves off, or people cant reach each other
-		timerid = Bukkit.getServer().getScheduler().scheduleSyncRepeatingTask(ArenaSpleef.getSelf(), new Runnable(){
-			public void run() {
-				try { 
-					WorldGuardUtil.setBlocks(w, layerName, type, data);
-				} catch (Exception e) {e.printStackTrace();}
-			}
-		}, (long) (mc.arena.spleef.Defaults.SECONDS_TO_REGEN*20L*Defaults.TICK_MULT),
-		(long) (mc.arena.spleef.Defaults.SECONDS_TO_REGEN*20L*Defaults.TICK_MULT));
+		world = Bukkit.getWorld(worldName);
+		if (world == null){
+			Log.err("[ArenaSpleef] worldName was null in arena " + getName());
+			getMatch().cancelMatch();
+			return;
+		}
+
+		initLayers();
 	}
 
 	public void initLayers(){
-		if (layerName == null)
+		if (layerNames == null || layerNames.isEmpty())
 			return;
-		World w = Bukkit.getWorld(worldName);
-		if (w == null){
-			Log.err("[ArenaSpleef] worldName was null in arena " + getName());
-			return;
+		regions = new ArrayList<ProtectedRegion>();
+		for (String layerName: layerNames){
+			ProtectedRegion pr = WorldGuardUtil.getRegion(world, layerName);
+			if (regenTimes != null && regenTimes.containsKey(layerName)){
+				startRegenTimer(pr, regenTimes.get(layerName));}
+
+			regions.add(pr);
 		}
+		regenLayers();
+	}
+
+	private void startRegenTimer(final ProtectedRegion pr, final Integer time) {
+		if (regenTimers == null)
+			regenTimers = new HashMap<String, Integer>();
+		Integer timerid = regenTimers.remove(pr.getId());
+		if (timerid != null){
+			Bukkit.getScheduler().cancelTask(timerid);}
+		// Set the timer to regenLayerTimes the blocks if someone has walled themselves off, or people cant reach each other
+		timerid = Bukkit.getScheduler().scheduleSyncRepeatingTask(ArenaSpleef.getSelf(), new Runnable(){
+			public void run() {
+				regenLayer(pr);
+			}
+		}, (long) (time*20L*mc.alk.arena.Defaults.TICK_MULT),
+		(long) (time*20L*mc.alk.arena.Defaults.TICK_MULT));
+		regenTimers.put(pr.getId(), timerid);
+	}
+
+	public void regenLayers(){
+		for (ProtectedRegion pr: regions){
+			regenLayer(pr);}	
+	}
+
+	void regenLayer(ProtectedRegion pr){
 		try {
-			pr = WorldGuardUtil.setBlocks(w,layerName,type,data);
+			//WorldGuardUtil.setBlocks(w, layerName, type, data);
+			WorldGuardUtil.pasteSchematic(Bukkit.getConsoleSender(), pr, pr.getId(),world);		
 		} catch (Exception e) {
-			Log.err(e.getMessage());
 			e.printStackTrace();
 		}
 	}
 
 	@Override
 	public void onFinish(){
-		World w = Bukkit.getWorld(worldName);
-		try {
-			WorldGuardUtil.setBlocks(w, layerName, type, data);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		cancelTimer();
+		regenLayers();
+		cancelTimers();
 	}
 
 	@MatchEventHandler
 	public void onBlockBreak(BlockBreakEvent event){
 		Location l = event.getBlock().getLocation();
-		if (pr.contains(l.getBlockX(), l.getBlockY(),l.getBlockZ())){
-			event.setCancelled(false);
+		for (ProtectedRegion pr: regions){
+			if (pr.contains(l.getBlockX(), l.getBlockY(),l.getBlockZ())){
+				event.setCancelled(false);}			
 		}
 	}
 
 	@Override
 	public boolean valid(){
-		return super.valid() && layerName != null && worldName != null && 
-				Bukkit.getWorld(worldName)!=null && WorldGuardUtil.hasRegion(Bukkit.getWorld(worldName), getRegionName());
+		boolean success = super.valid() && layerNames != null && !layerNames.isEmpty() 
+				&& worldName != null && Bukkit.getWorld(worldName)!=null;
+		if (!success)
+			return false;
+		for (int i=0;i<layerNames.size();i++){
+			if (!WorldGuardUtil.hasRegion(Bukkit.getWorld(worldName), getRegionName(i)))
+				return false;
+		}
+		return true;
 	}
 
 	@Override
 	public List<String> getInvalidReasons(){
 		List<String> reasons = new ArrayList<String>();
-		if (layerName == null || layerName.isEmpty()){
-			reasons.add("ArenaSpleef arena needs a floor region, and none is defined!");
+		if (layerNames == null || layerNames.isEmpty()){
+			reasons.add("ArenaSpleef arena needs a layer region, and none is defined!");
+		} else {
+			for (int i=0;i<layerNames.size();i++){
+				if (!WorldGuardUtil.hasRegion(Bukkit.getWorld(worldName), getRegionName(i)))
+					reasons.add("ArenaSpleef lost layer "+i+", please reselect it");
+			}			
 		}
 		if (worldName == null || worldName.isEmpty() || Bukkit.getWorld(worldName)==null){
-			reasons.add("ArenaSpleef lost its region, please reselect it");
-		}
-		if (!WorldGuardUtil.hasRegion(Bukkit.getWorld(worldName), getRegionName())){
 			reasons.add("ArenaSpleef lost its region, please reselect it");
 		}
 		reasons.addAll(super.getInvalidReasons());
@@ -114,25 +145,34 @@ public class SpleefArena extends Arena{
 	}
 
 
-	private void cancelTimer() {
-		if (timerid != null){
-			Bukkit.getScheduler().cancelTask(timerid);
-			timerid = null;
+	private void cancelTimers() {
+		if (regenTimers != null){
+			for (Integer timerid: regenTimers.values()){
+				Bukkit.getScheduler().cancelTask(timerid);				
+			}
 		}
 	}
 
-	public void setRegionType(BaseBlock block) {
-		type = block.getType();
-		data = block.getData();
+	private String getRegionName(int layer) {
+		return "ba-spleef-"+getName() +"-"+layer;
 	}
 
-	private String getRegionName() {
-		return "ba-spleef-"+getName();
-	}
+	public void setRegion(Player p, Selection sel, int layer, Integer regenTime) throws Exception {
+		final String layerName = getRegionName(layer);
+		if (regenTimes == null && regenTime != null && regenTime > 0)
+			regenTimes = new HashMap<String,Integer>();
+		if (layerNames == null)
+			layerNames = new ArrayList<String>();
+		if (layer < layerNames.size()){
+			layerNames.set(layer, layerName);
+		} else { 
+			layerNames.add(layerName);
+		}
+		if (regenTime != null && regenTime > 0){
+			regenTimes.put(layerName, regenTime);}
 
-	public void setRegion(Selection sel) throws Exception {
-		WorldGuardUtil.addRegion(sel, getRegionName());
-		layerName = getRegionName();
 		worldName = sel.getWorld().getName();
+		WorldGuardUtil.addRegion(sel, layerName);
+		WorldGuardUtil.saveSchematic(p, layerName);
 	}
 }

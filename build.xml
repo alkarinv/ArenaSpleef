@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ====================================================================== 
+
+     ArenaSpleef
+     
+     Alkarin_v
+     ====================================================================== -->
+<project name="ArenaSpleef" default="build">
+	<description>
+            Spleef plugin for for bukkit. 
+    </description>
+
+	<!-- set global properties for this build -->
+	<property name="src" location="src" />
+	<property name="bin" location="bin" />
+	<property name="lib" location="../../mcjars" />
+	<target name="init" depends="clean" description="create necessary folders">
+		<mkdir dir="${bin}" />
+	</target>
+	<target name="build" depends="init" description="compile the source">
+		<javac srcdir="${src}" destdir="${bin}" debug="on" debuglevel="lines,vars,source" includeantruntime="false" encoding="Cp1252">
+			<classpath>
+				<pathelement path="${lib}" />
+				<pathelement location="${lib}/BattleArena.jar" />
+				<pathelement location="${lib}/CraftBukkit.jar" /> 
+				<pathelement location="${lib}/WorldGuard.jar" /> 
+				<pathelement location="${lib}/WorldEdit.jar" /> 
+			</classpath>
+		</javac>
+		<antcall target="dist" />
+	</target>
+	<target name="dist" description="generate the distribution">
+		<jar jarfile="${bin}/ArenaSpleef.jar" basedir="${bin}" encoding="Cp1252">
+			<zipfileset dir="." includes="*.yml" />
+			<zipgroupfileset dir="${lib}" includes="commons-lang3-3.1.jar" />
+			<zipgroupfileset dir="${lib}" includes="BattleArena.jar" />
+		</jar>
+	</target>
+	<target name="clean" description="clean up">
+		<delete dir="${bin}" />
+	</target>
+
+</project>
