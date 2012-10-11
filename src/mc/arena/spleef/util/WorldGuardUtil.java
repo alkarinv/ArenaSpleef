@@ -263,15 +263,16 @@ public class WorldGuardUtil {
 	}
 	
 	public static boolean hasRegion(World world, String id){
-		RegionManager mgr = wgp.getGlobalRegionManager().get(world);
-		return mgr.hasRegion(id);
+		return wgp.getRegionManager(world).hasRegion(id);
 	}
-
 
 	public static Selection getSelection(Player player) {
 		return wep.getSelection(player);
 	}
-
+	
+	public static void deleteRegion(World world, String id) {
+		wgp.getRegionManager(world).removeRegion(id);
+	}
 
 	public static void loadWorldGuardPlugin() {
 		Plugin plugin= Bukkit.getServer().getPluginManager().getPlugin("WorldEdit");
@@ -302,4 +303,7 @@ public class WorldGuardUtil {
 			player.printError(msg);
 		}		
 	}
+
+
+	
 }

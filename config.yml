@@ -1,0 +1,4 @@
+version: 1.0
+
+superpick: false ## superpick allows instantenous block breaking
+superpick_item: 284 ## Gold shovel

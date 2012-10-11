@@ -1,9 +1,10 @@
 package mc.arena.spleef;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import mc.alk.arena.objects.arenas.Arena;
 import mc.alk.arena.objects.events.MatchEventHandler;
@@ -13,14 +14,21 @@ import mc.arena.spleef.util.WorldGuardUtil;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.ItemStack;
 
 import com.sk89q.worldedit.bukkit.selections.Selection;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 
 public class SpleefArena extends Arena{
+	public static boolean superpick = false;
+	public static int superpick_item = 284;
+
 	@Persist
 	String worldName; /// What world this spleef is in
 
@@ -39,25 +47,25 @@ public class SpleefArena extends Arena{
 	@Override
 	public void onOpen(){
 		cancelTimers();
-		initLayers();
-	}
-
-	@Override
-	public void onStart(){
 		world = Bukkit.getWorld(worldName);
+
 		if (world == null){
 			Log.err("[ArenaSpleef] worldName was null in arena " + getName());
 			getMatch().cancelMatch();
 			return;
 		}
+		initLayers();
+	}
 
+	@Override
+	public void onStart(){
 		initLayers();
 	}
 
 	public void initLayers(){
 		if (layerNames == null || layerNames.isEmpty())
 			return;
-		regions = new ArrayList<ProtectedRegion>();
+		regions = new CopyOnWriteArrayList<ProtectedRegion>();
 		for (String layerName: layerNames){
 			ProtectedRegion pr = WorldGuardUtil.getRegion(world, layerName);
 			if (regenTimes != null && regenTimes.containsKey(layerName)){
@@ -70,7 +78,7 @@ public class SpleefArena extends Arena{
 
 	private void startRegenTimer(final ProtectedRegion pr, final Integer time) {
 		if (regenTimers == null)
-			regenTimers = new HashMap<String, Integer>();
+			regenTimers = new ConcurrentHashMap<String, Integer>();
 		Integer timerid = regenTimers.remove(pr.getId());
 		if (timerid != null){
 			Bukkit.getScheduler().cancelTask(timerid);}
@@ -111,6 +119,26 @@ public class SpleefArena extends Arena{
 			if (pr.contains(l.getBlockX(), l.getBlockY(),l.getBlockZ())){
 				event.setCancelled(false);}			
 		}
+	}
+
+	@MatchEventHandler
+	public void onPlayerInteract(PlayerInteractEvent event){
+		if (!superpick || event.getAction() != Action.LEFT_CLICK_BLOCK || 
+				!superPickItem(event.getPlayer().getItemInHand()))
+			return;
+		Location l = event.getClickedBlock().getLocation();
+		for (ProtectedRegion pr: regions){
+			if (pr.contains(l.getBlockX(), l.getBlockY(),l.getBlockZ())){
+				event.setCancelled(true);
+				event.getClickedBlock().setType(Material.AIR);
+			}			
+		}
+	}
+
+	private boolean superPickItem(ItemStack item) {
+		if (item == null)
+			return false;
+		return item.getTypeId() == superpick_item;
 	}
 
 	@Override
@@ -160,9 +188,9 @@ public class SpleefArena extends Arena{
 	public void setRegion(Player p, Selection sel, int layer, Integer regenTime) throws Exception {
 		final String layerName = getRegionName(layer);
 		if (regenTimes == null && regenTime != null && regenTime > 0)
-			regenTimes = new HashMap<String,Integer>();
+			regenTimes = new ConcurrentHashMap<String,Integer>();
 		if (layerNames == null)
-			layerNames = new ArrayList<String>();
+			layerNames = new CopyOnWriteArrayList<String>();
 		if (layer < layerNames.size()){
 			layerNames.set(layer, layerName);
 		} else { 
@@ -175,4 +203,11 @@ public class SpleefArena extends Arena{
 		WorldGuardUtil.addRegion(sel, layerName);
 		WorldGuardUtil.saveSchematic(p, layerName);
 	}
+	
+//	@Override
+//	protected void delete(){
+//		for (String layerName: layerNames){
+//			WorldGuardUtil.deleteRegion(world, layerName);			
+//		}		
+//	}
 }
