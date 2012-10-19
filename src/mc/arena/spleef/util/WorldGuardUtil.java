@@ -5,7 +5,6 @@ import java.io.IOException;
 
 import mc.alk.arena.util.Log;
 import mc.alk.arena.util.MessageUtil;
-import mc.arena.spleef.Defaults;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -15,7 +14,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
 import com.sk89q.minecraft.util.commands.CommandContext;
-import com.sk89q.worldedit.BlockVector;
 import com.sk89q.worldedit.CuboidClipboard;
 import com.sk89q.worldedit.DisallowedItemException;
 import com.sk89q.worldedit.EditSession;
@@ -27,14 +25,11 @@ import com.sk89q.worldedit.Vector;
 import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.blocks.BaseBlock;
 import com.sk89q.worldedit.bukkit.BukkitPlayer;
-import com.sk89q.worldedit.bukkit.BukkitUtil;
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;
-import com.sk89q.worldedit.bukkit.selections.CuboidSelection;
 import com.sk89q.worldedit.bukkit.selections.Selection;
 import com.sk89q.worldedit.commands.SchematicCommands;
 import com.sk89q.worldedit.data.DataException;
 import com.sk89q.worldedit.patterns.Pattern;
-import com.sk89q.worldedit.patterns.SingleBlockPattern;
 import com.sk89q.worldedit.regions.Region;
 import com.sk89q.worldedit.schematic.SchematicFormat;
 import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
@@ -175,23 +170,6 @@ public class WorldGuardUtil {
 		}
 		return true;
 	}
-	public static ProtectedRegion setBlocks(World w, String region, int type, int data) throws Exception{
-		RegionManager rm = wgp.getRegionManager(w);
-		if (rm == null)
-			throw new WorldGuardException("Region manager for world " + w.getName() +" was null");
-		ProtectedRegion pr = rm.getRegion(region);
-		if (pr == null)
-			throw new WorldGuardException("ProtectedRegion " + region +" was null");
-		BlockVector min = pr.getMinimumPoint();
-		BlockVector max = pr.getMaximumPoint();
-		final Selection sel = new CuboidSelection(w,min,max);
-		EditSession es = new EditSession(BukkitUtil.getLocalWorld(sel.getWorld()), Defaults.MAX_REGION_SIZE);
-		Pattern p = new SingleBlockPattern(new BaseBlock(type,data));
-		es.setBlocks(sel.getRegionSelector().getRegion(), p);
-		return pr;
-	}
-
-
 
 	public static void setFlag(World w, String region, StateFlag flag, State value) throws Exception {
 		RegionManager rm = wgp.getRegionManager(w);

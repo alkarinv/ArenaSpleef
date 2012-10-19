@@ -15,6 +15,8 @@ public class ArenaSpleef extends JavaPlugin {
 		plugin = this;
 		BattleArena.registerMatchType(this, "Spleef", "spleef", SpleefArena.class, new SpleefExecutor());
 
+		BattleArena.registerEventType(this, "ESpleef", "espleef", SpleefArena.class, new ESpleefExecutor());
+
 		WorldGuardUtil.loadWorldGuardPlugin();
 
 		FileConfiguration config = this.getConfig();

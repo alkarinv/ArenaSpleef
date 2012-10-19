@@ -204,10 +204,10 @@ public class SpleefArena extends Arena{
 		WorldGuardUtil.saveSchematic(p, layerName);
 	}
 	
-//	@Override
-//	protected void delete(){
-//		for (String layerName: layerNames){
-//			WorldGuardUtil.deleteRegion(world, layerName);			
-//		}		
-//	}
+	@Override
+	protected void delete(){
+		for (String layerName: layerNames){
+			WorldGuardUtil.deleteRegion(world, layerName);			
+		}		
+	}
 }

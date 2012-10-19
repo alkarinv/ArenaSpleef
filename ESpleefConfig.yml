@@ -1,0 +1,37 @@
+## This should be places in the plugin directory
+## for more help configuring see the wiki
+## https://github.com/alkarinv/BattleArena/wiki
+## Change this file to customize your event
+
+ESpleef:
+    enabled: true
+    command: espleef
+    type: ESpleef
+    database: eSpleef # or delete if you dont want wins/losses/top, needs BattleTracker
+    prefix: "&b[eSpleef]&e"
+    nTeams: 2+
+    teamSize: 1+
+    preReqs:
+        options: [clearInventory]
+    onJoin:
+        options: [teleportIn, pvpOff, hunger=20]
+    onOpen:
+        options: [pvpOff, blockBreakOff]
+    onPrestart:
+        options: [pvpOff, deEnchant, woolTeams, blockBreakOff]
+    onStart:
+        options: [pvpOff, hunger=20, blockBreakOn]
+    onSpawn:
+        options: [giveItems, health=20, hunger=20]
+        items: # ignored if options doesnt have "giveItems"
+        - diamond_spade: 1
+        - shear: 1
+        - bread: 5
+    onDeath:
+        options: [clearInventory]
+    onComplete:
+        options: [teleportOut, deEnchant, undisguise]
+    onVictory:
+        options: [invincible]
+    winner:
+        options: [health=20, hunger=20]
