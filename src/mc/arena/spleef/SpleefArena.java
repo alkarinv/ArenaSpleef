@@ -7,6 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import mc.alk.arena.objects.arenas.Arena;
+import mc.alk.arena.objects.events.EventPriority;
 import mc.alk.arena.objects.events.MatchEventHandler;
 import mc.alk.arena.serializers.Persist;
 import mc.alk.arena.util.Log;
@@ -26,8 +27,6 @@ import com.sk89q.worldedit.bukkit.selections.Selection;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 
 public class SpleefArena extends Arena{
-	public static boolean superpick = false;
-	public static int superpick_item = 284;
 
 	@Persist
 	String worldName; /// What world this spleef is in
@@ -36,44 +35,73 @@ public class SpleefArena extends Arena{
 	List<String> layerNames; /// What are our layer names
 
 	@Persist
-	Map<String, Integer> regenTimes;
+	Map<String, Integer> regenTimes; /// How often each layer should regenerate
 
-	Map<String, Integer> regenTimers; /// list of regen timers
+	Map<String, Integer> regenTimers; /// list of regen timer id's
 
 	List<ProtectedRegion> regions; /// Our protected region layers
 
 	World world; /// what world our spleef is in
 
-	@Override
-	public void onOpen(){
+	private void privateInit(){
 		cancelTimers();
-		world = Bukkit.getWorld(worldName);
-
-		if (world == null){
-			Log.err("[ArenaSpleef] worldName was null in arena " + getName());
-			getMatch().cancelMatch();
+		if (worldName == null){
+			Log.err("[ArenaSpleef] worldName was null in arena " + getName() +" Please remake the layers using the setLayer command");
 			return;
 		}
-		initLayers();
+		if (world == null)
+			world = Bukkit.getWorld(worldName);
+
+		if (world == null){
+			Log.err("[ArenaSpleef] world was null in arena " + getName() +" Please remake the layers using the setLayer command");
+			return;
+		}
+		if (layerNames == null || layerNames.isEmpty()){
+			Log.err("[ArenaSpleef] "+getName()+" layers were empty.  Please remake the layers using the setLayer command");
+			return;
+		}
+		if (regions == null && !initProtectedRegions()){
+			Log.err("[ArenaSpleef] "+getName()+" one of the WorldGuard regions was not found, please remake the layers using the setLayer command");
+			return;
+		}
+	}
+
+	@Override
+	public void onOpen(){
+		privateInit();
+		regenLayers();
 	}
 
 	@Override
 	public void onStart(){
-		initLayers();
+		regenLayers();
+		startRegenTimers();
 	}
 
-	public void initLayers(){
-		if (layerNames == null || layerNames.isEmpty())
-			return;
+	public boolean initProtectedRegions(){
+		if (world == null && worldName != null)
+			world = Bukkit.getWorld(worldName);
+		if (layerNames == null || layerNames.isEmpty() || world == null)
+			return false;
 		regions = new CopyOnWriteArrayList<ProtectedRegion>();
 		for (String layerName: layerNames){
 			ProtectedRegion pr = WorldGuardUtil.getRegion(world, layerName);
-			if (regenTimes != null && regenTimes.containsKey(layerName)){
-				startRegenTimer(pr, regenTimes.get(layerName));}
-
+			if (pr == null){
+				return false;}
 			regions.add(pr);
 		}
-		regenLayers();
+		return true;
+	}
+
+	private void startRegenTimers(){
+		if (regenTimes == null)
+			return;
+		for (String layerName: layerNames){
+			if (regenTimes.containsKey(layerName)){
+				ProtectedRegion pr = WorldGuardUtil.getRegion(world, layerName);
+				startRegenTimer(pr, regenTimes.get(layerName));
+			}
+		}
 	}
 
 	private void startRegenTimer(final ProtectedRegion pr, final Integer time) {
@@ -93,14 +121,15 @@ public class SpleefArena extends Arena{
 	}
 
 	public void regenLayers(){
+		if (regions == null)
+			return;
 		for (ProtectedRegion pr: regions){
-			regenLayer(pr);}	
+			regenLayer(pr);}
 	}
 
 	void regenLayer(ProtectedRegion pr){
 		try {
-			//WorldGuardUtil.setBlocks(w, layerName, type, data);
-			WorldGuardUtil.pasteSchematic(Bukkit.getConsoleSender(), pr, pr.getId(),world);		
+			WorldGuardUtil.pasteSchematic(Bukkit.getConsoleSender(), pr, pr.getId(),world);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -112,18 +141,20 @@ public class SpleefArena extends Arena{
 		cancelTimers();
 	}
 
-	@MatchEventHandler
+	@MatchEventHandler(priority=EventPriority.LOW)
 	public void onBlockBreak(BlockBreakEvent event){
+		if (regions == null)
+			return;
 		Location l = event.getBlock().getLocation();
 		for (ProtectedRegion pr: regions){
 			if (pr.contains(l.getBlockX(), l.getBlockY(),l.getBlockZ())){
-				event.setCancelled(false);}			
+				event.setCancelled(false);}
 		}
 	}
 
-	@MatchEventHandler
+	@MatchEventHandler(priority=EventPriority.LOW)
 	public void onPlayerInteract(PlayerInteractEvent event){
-		if (!superpick || event.getAction() != Action.LEFT_CLICK_BLOCK || 
+		if (regions == null || !Defaults.SUPERPICK || event.getAction() != Action.LEFT_CLICK_BLOCK ||
 				!superPickItem(event.getPlayer().getItemInHand()))
 			return;
 		Location l = event.getClickedBlock().getLocation();
@@ -131,19 +162,19 @@ public class SpleefArena extends Arena{
 			if (pr.contains(l.getBlockX(), l.getBlockY(),l.getBlockZ())){
 				event.setCancelled(true);
 				event.getClickedBlock().setType(Material.AIR);
-			}			
+			}
 		}
 	}
 
-	private boolean superPickItem(ItemStack item) {
+	private static boolean superPickItem(ItemStack item) {
 		if (item == null)
 			return false;
-		return item.getTypeId() == superpick_item;
+		return item.getTypeId() == Defaults.SUPERPICK_ITEM;
 	}
 
 	@Override
 	public boolean valid(){
-		boolean success = super.valid() && layerNames != null && !layerNames.isEmpty() 
+		boolean success = super.valid() && layerNames != null && !layerNames.isEmpty()
 				&& worldName != null && Bukkit.getWorld(worldName)!=null;
 		if (!success)
 			return false;
@@ -161,11 +192,11 @@ public class SpleefArena extends Arena{
 			reasons.add("ArenaSpleef arena needs a layer region, and none is defined!");
 		} else {
 			for (int i=0;i<layerNames.size();i++){
-				if (!WorldGuardUtil.hasRegion(Bukkit.getWorld(worldName), getRegionName(i)))
+				if (!WorldGuardUtil.hasRegion(world, getRegionName(i)))
 					reasons.add("ArenaSpleef lost layer "+i+", please reselect it");
-			}			
+			}
 		}
-		if (worldName == null || worldName.isEmpty() || Bukkit.getWorld(worldName)==null){
+		if (world == null || worldName == null || worldName.isEmpty() || Bukkit.getWorld(worldName)==null){
 			reasons.add("ArenaSpleef lost its region, please reselect it");
 		}
 		reasons.addAll(super.getInvalidReasons());
@@ -176,7 +207,7 @@ public class SpleefArena extends Arena{
 	private void cancelTimers() {
 		if (regenTimers != null){
 			for (Integer timerid: regenTimers.values()){
-				Bukkit.getScheduler().cancelTask(timerid);				
+				Bukkit.getScheduler().cancelTask(timerid);
 			}
 		}
 	}
@@ -185,29 +216,41 @@ public class SpleefArena extends Arena{
 		return "ba-spleef-"+getName() +"-"+layer;
 	}
 
-	public void setRegion(Player p, Selection sel, int layer, Integer regenTime) throws Exception {
+	public void setRegion(Player p, Selection sel, int layer) throws Exception, SpleefException {
 		final String layerName = getRegionName(layer);
-		if (regenTimes == null && regenTime != null && regenTime > 0)
-			regenTimes = new ConcurrentHashMap<String,Integer>();
 		if (layerNames == null)
 			layerNames = new CopyOnWriteArrayList<String>();
 		if (layer < layerNames.size()){
 			layerNames.set(layer, layerName);
-		} else { 
+		} else if (layer == layerNames.size()){
 			layerNames.add(layerName);
+		} else{
+			throw new SpleefException("&cYou need to set layer " + (layerNames.size()+1)+" before setting this layer!");
 		}
-		if (regenTime != null && regenTime > 0){
-			regenTimes.put(layerName, regenTime);}
-
 		worldName = sel.getWorld().getName();
 		WorldGuardUtil.addRegion(sel, layerName);
 		WorldGuardUtil.saveSchematic(p, layerName);
+		initProtectedRegions();
 	}
-	
+
+	public void setRegen(int layer, Integer regenTime) throws Exception, SpleefException {
+		if (layerNames == null || layer >= layerNames.size()){
+			throw new SpleefException("&cYou need to set layer " + layer +" before adding regen to it! "+
+					"&6/spleef setLayer <arena> " + layer);
+		}
+		final String layerName = getRegionName(layer);
+		if (regenTimes == null)
+			regenTimes = new ConcurrentHashMap<String,Integer>();
+		if (regenTime != null && regenTime > 0){
+			regenTimes.put(layerName, regenTime);}
+	}
+
 	@Override
 	protected void delete(){
-		for (String layerName: layerNames){
-			WorldGuardUtil.deleteRegion(world, layerName);			
-		}		
+		if (layerNames != null){
+			for (String layerName: layerNames){
+				WorldGuardUtil.deleteRegion(world, layerName);
+			}
+		}
 	}
 }
