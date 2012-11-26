@@ -27,4 +27,14 @@ public class ESpleefExecutor extends ReservedArenaEventExecutor{
 	public boolean setRegen(CommandSender sender, Arena arena, Integer layerIndex, Integer regenTime) {
 		return SpleefsExecutor.setRegen(sender,arena,layerIndex, regenTime);
 	}
+
+	@MCCommand(cmds={"deleteRegen"}, admin=true)
+	public boolean deleteRegen(CommandSender sender, Arena arena) {
+		return SpleefsExecutor.deleteRegen(sender,arena,1);
+	}
+
+	@MCCommand(cmds={"deleteRegen"}, admin=true, order=1)
+	public boolean deleteRegen(CommandSender sender, Arena arena, Integer layerIndex) {
+		return SpleefsExecutor.deleteRegen(sender,arena,layerIndex);
+	}
 }

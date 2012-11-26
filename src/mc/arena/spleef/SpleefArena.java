@@ -73,8 +73,12 @@ public class SpleefArena extends Arena{
 	}
 
 	@Override
-	public void onStart(){
+	public void onPrestart(){
 		regenLayers();
+	}
+
+	@Override
+	public void onStart(){
 		startRegenTimers();
 	}
 
@@ -243,6 +247,17 @@ public class SpleefArena extends Arena{
 			regenTimes = new ConcurrentHashMap<String,Integer>();
 		if (regenTime != null && regenTime > 0){
 			regenTimes.put(layerName, regenTime);}
+	}
+
+	public void deleteRegen(int layer) throws Exception, SpleefException {
+		if (layerNames == null || layer >= layerNames.size()){
+			throw new SpleefException("&cYou need to set layer " + layer +" before deleting regen !"+
+					"&6/spleef setLayer <arena> " + layer);
+		}
+		final String layerName = getRegionName(layer);
+		if (regenTimes == null){
+			return;}
+		regenTimes.remove(layerName);
 	}
 
 	@Override

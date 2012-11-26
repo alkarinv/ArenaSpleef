@@ -40,4 +40,18 @@ public class SpleefsExecutor {
 	public static boolean sendMessage(CommandSender sender, String msg){
 		return MessageUtil.sendMessage(sender, msg);
 	}
+
+	public static boolean deleteRegen(CommandSender sender, Arena arena,Integer layerIndex) {
+		try{
+			SpleefArenaEditor sae = new SpleefArenaEditor(arena);
+			sae.deleteRegen(layerIndex);
+			return sendMessage(sender,"&2Spleef Layer "+layerIndex+" now no longer regens during the match");
+		} catch (SpleefException e) {
+			return sendMessage(sender, e.getMessage());
+		} catch (Exception e) {
+			e.printStackTrace();
+			return sendMessage(sender, ChatColor.RED + "Error deleting regen. " + e.getMessage());
+		}
+
+	}
 }

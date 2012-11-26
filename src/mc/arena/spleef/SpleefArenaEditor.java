@@ -36,4 +36,11 @@ public class SpleefArenaEditor {
 		arena.setRegen(layerIndex-1, regenTime);
 		BattleArena.saveArenas(ArenaSpleef.getSelf());
 	}
+
+	public void deleteRegen(Integer layerIndex) throws Exception {
+		if (layerIndex <1 || layerIndex > Defaults.MAX_LAYERS){
+			throw new SpleefException("&cBad layer index, 1-"+Defaults.MAX_LAYERS);}
+		arena.deleteRegen(layerIndex-1);
+		BattleArena.saveArenas(ArenaSpleef.getSelf());
+	}
 }
