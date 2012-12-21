@@ -29,19 +29,36 @@ import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 public class SpleefArena extends Arena{
 
 	@Persist
-	String worldName; /// What world this spleef is in
+	String worldName; /// What world this spleef is in, loaded from ArenaSpleef/arenas.yml
 
 	@Persist
-	List<String> layerNames; /// What are our layer names
+	List<String> layerNames; /// What are our layer names, loaded from ArenaSpleef/arenas.yml
 
 	@Persist
-	Map<String, Integer> regenTimes; /// How often each layer should regenerate
+	Map<String, Integer> regenTimes; /// How often each layer should regenerate, loaded from ArenaSpleef/arenas.yml
 
+	/// The following variables should be reinitialized and set up every match
 	Map<String, Integer> regenTimers; /// list of regen timer id's
 
 	List<ProtectedRegion> regions; /// Our protected region layers
 
 	World world; /// what world our spleef is in
+
+	@Override
+	public void onOpen(){
+		privateInit();
+		regenLayers();
+	}
+
+	@Override
+	public void onPrestart(){
+		regenLayers();
+	}
+
+	@Override
+	public void onStart(){
+		startRegenTimers();
+	}
 
 	private void privateInit(){
 		cancelTimers();
@@ -64,22 +81,6 @@ public class SpleefArena extends Arena{
 			Log.err("[ArenaSpleef] "+getName()+" one of the WorldGuard regions was not found, please remake the layers using the setLayer command");
 			return;
 		}
-	}
-
-	@Override
-	public void onOpen(){
-		privateInit();
-		regenLayers();
-	}
-
-	@Override
-	public void onPrestart(){
-		regenLayers();
-	}
-
-	@Override
-	public void onStart(){
-		startRegenTimers();
 	}
 
 	public boolean initProtectedRegions(){
@@ -192,11 +193,14 @@ public class SpleefArena extends Arena{
 	@Override
 	public List<String> getInvalidReasons(){
 		List<String> reasons = new ArrayList<String>();
+		if (!WorldGuardUtil.hasWorldGuard()){
+			reasons.add("ArenaSpleef needs WorldGuard!");
+		}
 		if (layerNames == null || layerNames.isEmpty()){
 			reasons.add("ArenaSpleef arena needs a layer region, and none is defined!");
 		} else {
 			for (int i=0;i<layerNames.size();i++){
-				if (!WorldGuardUtil.hasRegion(world, getRegionName(i)))
+				if (WorldGuardUtil.hasWorldGuard() && !WorldGuardUtil.hasRegion(world, getRegionName(i)))
 					reasons.add("ArenaSpleef lost layer "+i+", please reselect it");
 			}
 		}

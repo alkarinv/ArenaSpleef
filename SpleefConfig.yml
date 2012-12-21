@@ -1,27 +1,34 @@
+configVersion: 2.0
+
 ## for more help configuring see the wiki
 ## https://github.com/alkarinv/BattleArena/wiki
 ## Change this file to customize your match
 
 Spleef:
     enabled: true
+    prefix: "&b[Spleef]&e"
     type: Spleef
     database: Spleef
     rated: true
-    prefix: "&b[Spleef]&e"
-    onJoin:
-        options: [pvpOff]
+    nTeams: 2+
+    teamSize: 1+
+    defaults:
+        options: [woolTeams]
     preReqs:
         options: [clearInventory]
+    onEnter:
+        options: [storeAll]
+    onLeave:
+        options: [restoreAll]
     onPrestart:
         options: []
     onStart:
-        options: [teleportIn, blockBreakOn, woolTeams, pvpOff]
+        options: [teleportIn, blockBreakOn, pvpOff]
     onSpawn:
         options: [deEnchant, giveItems, hunger=20, health=20]
         items: # ignored if options doesnt have "giveItems"
         - diamond_spade: 1
         - shear: 1
-        - bread: 5
     onDeath:
         options: [clearInventory]
     onVictory:
@@ -30,3 +37,5 @@ Spleef:
         options: [teleportOut, clearInventory]
     winner:
         options: [health=20, hunger=20]
+    losers:
+        options: []
