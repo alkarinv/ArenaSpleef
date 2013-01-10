@@ -2,9 +2,9 @@ package mc.arena.spleef;
 
 import mc.alk.arena.BattleArena;
 import mc.alk.arena.util.Log;
+import mc.alk.arena.util.WorldGuardUtil;
 import mc.arena.spleef.executors.ESpleefExecutor;
 import mc.arena.spleef.executors.SpleefExecutor;
-import mc.arena.spleef.util.WorldGuardUtil;
 
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -16,8 +16,11 @@ public class ArenaSpleef extends JavaPlugin {
 	public void onEnable(){
 		plugin = this;
 		/// We need worldguard/worldedit, load them in
-		WorldGuardUtil.loadWorldGuardPlugin();
-
+		if (!WorldGuardUtil.hasWorldGuard){
+			Log.err("Arena Spleef needs WorldEdit and WorldGuard to function!");
+			setEnabled(false);
+			return;
+		}
 		/// Register our spleef match type
 		BattleArena.registerMatchType(this, "Spleef", "spleef", SpleefArena.class, new SpleefExecutor());
 

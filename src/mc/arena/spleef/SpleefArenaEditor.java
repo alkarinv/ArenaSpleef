@@ -2,7 +2,7 @@ package mc.arena.spleef;
 
 import mc.alk.arena.BattleArena;
 import mc.alk.arena.objects.arenas.Arena;
-import mc.arena.spleef.util.WorldGuardUtil;
+import mc.alk.arena.util.WorldEditUtil;
 
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
@@ -20,7 +20,7 @@ public class SpleefArenaEditor {
 	public void setLayer(Player sender, Integer layerIndex) throws Exception{
 		if (layerIndex <1 || layerIndex > Defaults.MAX_LAYERS){
 			throw new SpleefException("&cBad layer index, 1-"+Defaults.MAX_LAYERS);}
-		Selection sel = WorldGuardUtil.getSelection(sender);
+		Selection sel = WorldEditUtil.getSelection(sender);
 		if (sel == null)
 			throw new SpleefException(ChatColor.RED + "Please select an area first using WorldEdit.");
 

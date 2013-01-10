@@ -1,17 +1,21 @@
 package mc.arena.spleef;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import mc.alk.arena.objects.MatchState;
 import mc.alk.arena.objects.arenas.Arena;
 import mc.alk.arena.objects.events.EventPriority;
 import mc.alk.arena.objects.events.MatchEventHandler;
 import mc.alk.arena.serializers.Persist;
 import mc.alk.arena.util.Log;
-import mc.arena.spleef.util.WorldGuardUtil;
+import mc.alk.arena.util.WorldGuardUtil;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -20,7 +24,9 @@ import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.ItemStack;
 
 import com.sk89q.worldedit.bukkit.selections.Selection;
@@ -44,6 +50,9 @@ public class SpleefArena extends Arena{
 
 	World world; /// what world our spleef is in
 
+	Set<String> lostPlayers = Collections.synchronizedSet(new HashSet<String>());
+
+
 	@Override
 	public void onOpen(){
 		privateInit();
@@ -62,6 +71,7 @@ public class SpleefArena extends Arena{
 
 	private void privateInit(){
 		cancelTimers();
+		lostPlayers.clear();
 		if (worldName == null){
 			Log.err("[ArenaSpleef] worldName was null in arena " + getName() +" Please remake the layers using the setLayer command");
 			return;
@@ -171,6 +181,35 @@ public class SpleefArena extends Arena{
 		}
 	}
 
+	/**
+	 * Check player move for the touching water victory condition
+	 * @param e
+	 */
+	@MatchEventHandler(priority=EventPriority.LOW)
+	public void onPlayerMove(PlayerMoveEvent e){
+		/// Same block, return out
+		if(		e.getFrom().getBlockX()==e.getTo().getBlockX() &&
+				e.getFrom().getBlockZ()==e.getTo().getBlockZ() &&
+				e.getFrom().getBlockY()==e.getTo().getBlockY() ||
+				e.getTo().getBlock().getType() != Material.STATIONARY_WATER ||
+				getMatchState() != MatchState.ONSTART){
+			return;}
+		final String name = e.getPlayer().getName();
+		/// check to see if the player has lost for the first time
+		if (lostPlayers.add(name)){
+			Bukkit.getScheduler().scheduleSyncDelayedTask(ArenaSpleef.getSelf(), new Runnable(){
+				@Override
+				public void run() {
+					Player p = Bukkit.getPlayerExact(name);
+					if (p.isOnline() && ! p.isDead()){
+						PlayerDeathEvent ede = new PlayerDeathEvent(p,new ArrayList<ItemStack>(),0, "");
+						Bukkit.getPluginManager().callEvent(ede);
+					}
+				}
+			}, 30L);
+		}
+	}
+
 	private static boolean superPickItem(ItemStack item) {
 		if (item == null)
 			return false;
@@ -179,8 +218,8 @@ public class SpleefArena extends Arena{
 
 	@Override
 	public boolean valid(){
-		boolean success = super.valid() && layerNames != null && !layerNames.isEmpty()
-				&& worldName != null && Bukkit.getWorld(worldName)!=null;
+		boolean success = super.valid() && WorldGuardUtil.hasWorldGuard() &&
+				layerNames != null && !layerNames.isEmpty() && worldName != null && Bukkit.getWorld(worldName)!=null;
 		if (!success)
 			return false;
 		for (int i=0;i<layerNames.size();i++){
@@ -194,23 +233,25 @@ public class SpleefArena extends Arena{
 	public List<String> getInvalidReasons(){
 		List<String> reasons = new ArrayList<String>();
 		if (!WorldGuardUtil.hasWorldGuard()){
-			reasons.add("ArenaSpleef needs WorldGuard!");
-		}
+			reasons.add("ArenaSpleef needs WorldGuard!");}
+		World w = null;
+		boolean lostWorld = worldName == null || worldName.isEmpty() || Bukkit.getWorld(worldName)==null;
+		if (!lostWorld)
+			w = Bukkit.getWorld(worldName);
+		if (lostWorld || w== null){
+			reasons.add("ArenaSpleef lost its region, please reselect it. world "+worldName+" not found");}
+
 		if (layerNames == null || layerNames.isEmpty()){
 			reasons.add("ArenaSpleef arena needs a layer region, and none is defined!");
-		} else {
+		} else if (!lostWorld && WorldGuardUtil.hasWorldGuard()){
 			for (int i=0;i<layerNames.size();i++){
-				if (WorldGuardUtil.hasWorldGuard() && !WorldGuardUtil.hasRegion(world, getRegionName(i)))
+				if (!WorldGuardUtil.hasRegion(w, getRegionName(i)))
 					reasons.add("ArenaSpleef lost layer "+i+", please reselect it");
 			}
-		}
-		if (world == null || worldName == null || worldName.isEmpty() || Bukkit.getWorld(worldName)==null){
-			reasons.add("ArenaSpleef lost its region, please reselect it");
 		}
 		reasons.addAll(super.getInvalidReasons());
 		return reasons;
 	}
-
 
 	private void cancelTimers() {
 		if (regenTimers != null){
@@ -236,7 +277,7 @@ public class SpleefArena extends Arena{
 			throw new SpleefException("&cYou need to set layer " + (layerNames.size()+1)+" before setting this layer!");
 		}
 		worldName = sel.getWorld().getName();
-		WorldGuardUtil.addRegion(sel, layerName);
+		WorldGuardUtil.addRegion(p, layerName);
 		WorldGuardUtil.saveSchematic(p, layerName);
 		initProtectedRegions();
 	}
@@ -268,7 +309,9 @@ public class SpleefArena extends Arena{
 	protected void delete(){
 		if (layerNames != null){
 			for (String layerName: layerNames){
-				WorldGuardUtil.deleteRegion(world, layerName);
+				if (world == null)
+					continue;
+				WorldGuardUtil.deleteRegion(world.getName(), layerName);
 			}
 		}
 	}
