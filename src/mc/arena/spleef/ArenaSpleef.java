@@ -22,10 +22,10 @@ public class ArenaSpleef extends JavaPlugin {
 			return;
 		}
 		/// Register our spleef match type
-		BattleArena.registerMatchType(this, "Spleef", "spleef", SpleefArena.class, new SpleefExecutor());
+		BattleArena.registerCompetition(this, "Spleef", "spleef", SpleefArena.class, new SpleefExecutor());
 
 		/// Register our spleef event type
-		BattleArena.registerEventType(this, "ESpleef", "espleef", SpleefArena.class, new ESpleefExecutor());
+		BattleArena.registerCompetition(this, "ESpleef", "espleef", SpleefArena.class, new ESpleefExecutor());
 
 		/// create our default config if it doesn't exist
 		saveDefaultConfig();

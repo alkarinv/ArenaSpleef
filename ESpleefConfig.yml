@@ -10,8 +10,10 @@ ESpleef:
     command: espleef
     type: ESpleef
     database: eSpleef # or delete if you dont want wins/losses/top, needs BattleTracker
+    joinType: JoinPhase
+    victoryCondition: LastManStanding
     nTeams: 2+
-    teamSize: 1+
+    teamSize: 1
     defaults:
         options: [woolTeams]
     preReqs:

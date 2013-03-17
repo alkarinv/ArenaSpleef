@@ -10,8 +10,10 @@ Spleef:
     type: Spleef
     database: Spleef
     rated: true
+    joinType: Queue
+    victoryCondition: LastManStanding
     nTeams: 2+
-    teamSize: 1+
+    teamSize: 1
     defaults:
         options: [woolTeams]
     preReqs:

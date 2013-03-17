@@ -30,6 +30,8 @@ import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.ItemStack;
 
 import com.sk89q.worldedit.bukkit.selections.Selection;
+import com.sk89q.worldguard.protection.flags.DefaultFlag;
+import com.sk89q.worldguard.protection.flags.StateFlag.State;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 
 public class SpleefArena extends Arena{
@@ -55,7 +57,7 @@ public class SpleefArena extends Arena{
 
 	@Override
 	public void onOpen(){
-		privateInit();
+		localInit();
 		regenLayers();
 	}
 
@@ -69,7 +71,7 @@ public class SpleefArena extends Arena{
 		startRegenTimers();
 	}
 
-	private void privateInit(){
+	private void localInit(){
 		cancelTimers();
 		lostPlayers.clear();
 		if (worldName == null){
@@ -177,6 +179,7 @@ public class SpleefArena extends Arena{
 			if (pr.contains(l.getBlockX(), l.getBlockY(),l.getBlockZ())){
 				event.setCancelled(true);
 				event.getClickedBlock().setType(Material.AIR);
+				event.getClickedBlock().getState().update();
 			}
 		}
 	}
@@ -262,7 +265,7 @@ public class SpleefArena extends Arena{
 	}
 
 	private String getRegionName(int layer) {
-		return "ba-spleef-"+getName() +"-"+layer;
+		return "ba-spleef-"+getName().toLowerCase() +"-"+layer;
 	}
 
 	public void setRegion(Player p, Selection sel, int layer) throws Exception, SpleefException {
@@ -278,6 +281,11 @@ public class SpleefArena extends Arena{
 		}
 		worldName = sel.getWorld().getName();
 		WorldGuardUtil.addRegion(p, layerName);
+		ProtectedRegion pr = WorldGuardUtil.getRegion(sel.getWorld(), layerName);
+		pr.setPriority(11); /// some relatively high priority
+		pr.setFlag(DefaultFlag.PVP,State.DENY);
+		pr.setFlag(DefaultFlag.BUILD,State.ALLOW); /// allow them to build on the layer, we will handle
+
 		WorldGuardUtil.saveSchematic(p, layerName);
 		initProtectedRegions();
 	}
