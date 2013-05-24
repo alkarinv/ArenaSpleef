@@ -3,7 +3,6 @@ package mc.arena.spleef;
 import mc.alk.arena.BattleArena;
 import mc.alk.arena.util.Log;
 import mc.alk.arena.util.WorldGuardUtil;
-import mc.arena.spleef.executors.ESpleefExecutor;
 import mc.arena.spleef.executors.SpleefExecutor;
 
 import org.bukkit.configuration.file.FileConfiguration;
@@ -21,12 +20,32 @@ public class ArenaSpleef extends JavaPlugin {
 			setEnabled(false);
 			return;
 		}
-		/// Register our spleef match type
+
+		/// Register our spleef type
 		BattleArena.registerCompetition(this, "Spleef", "spleef", SpleefArena.class, new SpleefExecutor());
 
-		/// Register our spleef event type
-		BattleArena.registerCompetition(this, "ESpleef", "espleef", SpleefArena.class, new ESpleefExecutor());
+		/// Load the Config
+		loadConfig();
 
+		Log.info("[" + getName()+ "] v" + getDescription().getVersion()+ " enabled!");
+	}
+
+	@Override
+	public void onDisable(){
+		Log.info("[" + getName()+ "] v" + getDescription().getVersion()+ " stopping!");
+	}
+
+	@Override
+	public void reloadConfig(){
+		super.reloadConfig();
+		loadConfig();
+	}
+
+	public static ArenaSpleef getSelf() {
+		return plugin;
+	}
+
+	public void loadConfig(){
 		/// create our default config if it doesn't exist
 		saveDefaultConfig();
 
@@ -37,15 +56,5 @@ public class ArenaSpleef extends JavaPlugin {
 		Defaults.MAX_LAYERS = config.getInt("maxLayers", Defaults.MAX_LAYERS);
 		Defaults.MAX_REGION_SIZE = config.getInt("maxRegionSize", Defaults.MAX_REGION_SIZE);
 
-		Log.info("[" + getName()+ "] v" + getDescription().getVersion()+ " enabled!");
-	}
-
-	@Override
-	public void onDisable(){
-		Log.info("[" + getName()+ "] v" + getDescription().getVersion()+ " stopping!");
-	}
-
-	public static ArenaSpleef getSelf() {
-		return plugin;
 	}
 }

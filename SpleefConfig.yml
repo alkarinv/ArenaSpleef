@@ -25,7 +25,7 @@ Spleef:
     onPrestart:
         options: []
     onStart:
-        options: [teleportIn, blockBreakOn, pvpOff]
+        options: [teleportIn, pvpOff]
     onSpawn:
         options: [deEnchant, giveItems, hunger=20, health=20]
         items: # ignored if options doesnt have "giveItems"
