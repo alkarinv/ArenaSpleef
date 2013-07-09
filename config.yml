@@ -1,10 +1,12 @@
-version: 1.1
+version: 1.1.1
 
 superpick: false ## superpick allows instantenous block breaking
 superpick_item: 284 ## Gold shovel
 
 maxLayers: 10 ## Maximum amount of layers a spleef can have
 maxRegionSize: 20000 ## Maximum size for each spleef layer
+
+noBlockDrops: false ## disable blocks from dropping after they break
 
 ## parameters to stop islanding
 islanding:

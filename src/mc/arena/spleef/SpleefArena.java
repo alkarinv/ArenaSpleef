@@ -218,7 +218,12 @@ public class SpleefArena extends Arena{
 		Location l = event.getBlock().getLocation();
 		for (ProtectedRegion pr: regions){
 			if (pr.contains(l.getBlockX(), l.getBlockY(),l.getBlockZ())){
-				event.setCancelled(false);}
+				event.setCancelled(false);
+				if (Defaults.ONBREAK_BLOCK_DROPS){
+					event.setCancelled(true);
+					event.getBlock().setType(Material.AIR);
+				}
+			}
 		}
 	}
 
@@ -250,9 +255,11 @@ public class SpleefArena extends Arena{
 		if(		e.getFrom().getBlockX()==e.getTo().getBlockX() &&
 				e.getFrom().getBlockZ()==e.getTo().getBlockZ() &&
 				e.getFrom().getBlockY()==e.getTo().getBlockY() ||
-				e.getTo().getBlock().getType() != Material.STATIONARY_WATER ||
+				(e.getTo().getBlock().getType() != Material.STATIONARY_WATER &&
+				e.getTo().getBlock().getType() != Material.STATIONARY_LAVA ) ||
 				getMatchState() != MatchState.ONSTART){
 			return;}
+
 		final String name = e.getPlayer().getName();
 		/// check to see if the player has lost for the first time
 		if (lostPlayers.add(name)){
