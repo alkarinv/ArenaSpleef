@@ -1,16 +1,9 @@
 package mc.arena.spleef;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-
+import com.sk89q.worldedit.bukkit.selections.Selection;
+import com.sk89q.worldguard.protection.flags.DefaultFlag;
+import com.sk89q.worldguard.protection.flags.StateFlag.State;
+import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 import mc.alk.arena.objects.ArenaPlayer;
 import mc.alk.arena.objects.MatchState;
 import mc.alk.arena.objects.arenas.Arena;
@@ -21,7 +14,6 @@ import mc.alk.arena.serializers.Persist;
 import mc.alk.arena.util.Log;
 import mc.alk.arena.util.MessageUtil;
 import mc.alk.arena.util.WorldGuardUtil;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -34,10 +26,16 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.ItemStack;
 
-import com.sk89q.worldedit.bukkit.selections.Selection;
-import com.sk89q.worldguard.protection.flags.DefaultFlag;
-import com.sk89q.worldguard.protection.flags.StateFlag.State;
-import com.sk89q.worldguard.protection.regions.ProtectedRegion;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class SpleefArena extends Arena{
 
@@ -61,6 +59,7 @@ public class SpleefArena extends Arena{
 
 	static int ISLAND_RADIUS = 2;
 	static int ISLAND_FAILS = 7;
+	int lowestHeight = Integer.MAX_VALUE;
 
 	Integer islandTimer = null;
 	Map<ArenaPlayer,Fails> movedPlayers = Collections.synchronizedMap(
@@ -91,7 +90,8 @@ public class SpleefArena extends Arena{
 		startIslandTimers();
 	}
 
-	private void localInit(){
+	@SuppressWarnings("UnnecessaryReturnStatement")
+    private void localInit(){
 		cancelTimers();
 		lostPlayers.clear();
 		if (worldName == null){
@@ -126,6 +126,7 @@ public class SpleefArena extends Arena{
 			if (pr == null){
 				return false;}
 			regions.add(pr);
+			lowestHeight = Math.min(lowestHeight, pr.getMinimumPoint().getBlockY());
 		}
 		return true;
 	}
@@ -142,7 +143,7 @@ public class SpleefArena extends Arena{
 	}
 
 	private void startIslandTimers(){
-		islandTimer = Bukkit.getScheduler().scheduleSyncRepeatingTask(ArenaSpleef.getSelf(), new Runnable(){
+		islandTimer = Bukkit.getScheduler().scheduleSyncRepeatingTask(mc.arena.spleef.ArenaSpleef.getSelf(), new Runnable(){
 			@Override
 			public void run() {
 				Collection<ArenaPlayer> players = getMatch().getAlivePlayers();
@@ -156,13 +157,15 @@ public class SpleefArena extends Arena{
 						int dif =
 								(int)(Math.pow(f.startLoc.getBlockX() - l.getBlockX(),2)) +
 								((int)(Math.pow(f.startLoc.getBlockZ() - l.getBlockZ(),2)));
-						if (dif < ISLAND_RADIUS &&
-								f.nFails++ > ISLAND_FAILS && lostPlayers.add(name)){
-							Player p = Bukkit.getPlayerExact(name);
-							if (p.isOnline() && ! p.isDead()){
-								MessageUtil.sendMessage(ap, "&cYou have been killed for &6Inactivity");
-								PlayerDeathEvent ede = new PlayerDeathEvent(p,new ArrayList<ItemStack>(),0, "");
-								Bukkit.getPluginManager().callEvent(ede);
+						if (dif < ISLAND_RADIUS){
+							f.nFails++;
+							if (f.nFails >= ISLAND_FAILS && lostPlayers.add(ap.getName())){
+								Player p = Bukkit.getPlayerExact(ap.getName());
+								if (p != null && p.isOnline() && ! p.isDead()){
+									MessageUtil.sendMessage(ap, "&cYou have been killed for &6Inactivity");
+									PlayerDeathEvent ede = new PlayerDeathEvent(p,new ArrayList<ItemStack>(),0, "");
+									Bukkit.getPluginManager().callEvent(ede);
+								}
 							}
 						} else {
 							f.nFails=0;
@@ -181,7 +184,7 @@ public class SpleefArena extends Arena{
 		if (timerid != null){
 			Bukkit.getScheduler().cancelTask(timerid);}
 		// Set the timer to regenLayerTimes the blocks if someone has walled themselves off, or people cant reach each other
-		timerid = Bukkit.getScheduler().scheduleSyncRepeatingTask(ArenaSpleef.getSelf(), new Runnable(){
+		timerid = Bukkit.getScheduler().scheduleSyncRepeatingTask(mc.arena.spleef.ArenaSpleef.getSelf(), new Runnable(){
 			public void run() {
 				regenLayer(pr);
 			}
@@ -215,11 +218,12 @@ public class SpleefArena extends Arena{
 	public void onBlockBreak(BlockBreakEvent event){
 		if (regions == null)
 			return;
+		event.setCancelled(true);
 		Location l = event.getBlock().getLocation();
 		for (ProtectedRegion pr: regions){
 			if (pr.contains(l.getBlockX(), l.getBlockY(),l.getBlockZ())){
 				event.setCancelled(false);
-				if (Defaults.ONBREAK_BLOCK_DROPS){
+				if (mc.arena.spleef.Defaults.STOP_BLOCKBREAK_DROPS){
 					event.setCancelled(true);
 					event.getBlock().setType(Material.AIR);
 				}
@@ -227,9 +231,10 @@ public class SpleefArena extends Arena{
 		}
 	}
 
+	@Override
 	@ArenaEventHandler(priority=EventPriority.LOW)
 	public void onPlayerInteract(PlayerInteractEvent event){
-		if (regions == null || !Defaults.SUPERPICK || event.getAction() != Action.LEFT_CLICK_BLOCK ||
+		if (regions == null || !mc.arena.spleef.Defaults.SUPERPICK || event.getAction() != Action.LEFT_CLICK_BLOCK ||
 				!superPickItem(event.getPlayer().getItemInHand()) ||
 				getMatch().getParams().getTransitionOptions().hasOptionAt(
 						this.getMatchState(), TransitionOption.BLOCKBREAKOFF))
@@ -246,24 +251,25 @@ public class SpleefArena extends Arena{
 	}
 
 	/**
-	 * Check player move for the touching water victory condition
-	 * @param e
+	 * Check player move for  the touching water victory condition
+	 * @param e PlayerMoveEvent
 	 */
 	@ArenaEventHandler(priority=EventPriority.LOW)
 	public void onPlayerMove(PlayerMoveEvent e){
-		/// Same block, return out
+		/// Same block, game hasnt started yet, height > lowestHeight, not water or lava
+		/// return out
 		if(		e.getFrom().getBlockX()==e.getTo().getBlockX() &&
 				e.getFrom().getBlockZ()==e.getTo().getBlockZ() &&
-				e.getFrom().getBlockY()==e.getTo().getBlockY() ||
-				(e.getTo().getBlock().getType() != Material.STATIONARY_WATER &&
-				e.getTo().getBlock().getType() != Material.STATIONARY_LAVA ) ||
-				getMatchState() != MatchState.ONSTART){
+				e.getFrom().getBlockY()==e.getTo().getBlockY()  ||
+				getMatchState() != MatchState.ONSTART ||
+				(mc.arena.spleef.Defaults.HEIGHT_LOSS && e.getTo().getBlockY() >= lowestHeight) ||
+				(!mc.arena.spleef.Defaults.HEIGHT_LOSS && (e.getTo().getBlock().getType() != Material.STATIONARY_WATER &&
+				e.getTo().getBlock().getType() != Material.STATIONARY_LAVA ))){
 			return;}
-
 		final String name = e.getPlayer().getName();
 		/// check to see if the player has lost for the first time
 		if (lostPlayers.add(name)){
-			Bukkit.getScheduler().scheduleSyncDelayedTask(ArenaSpleef.getSelf(), new Runnable(){
+			Bukkit.getScheduler().scheduleSyncDelayedTask(mc.arena.spleef.ArenaSpleef.getSelf(), new Runnable(){
 				@Override
 				public void run() {
 					Player p = Bukkit.getPlayerExact(name);
@@ -277,10 +283,8 @@ public class SpleefArena extends Arena{
 	}
 
 	private static boolean superPickItem(ItemStack item) {
-		if (item == null)
-			return false;
-		return item.getTypeId() == Defaults.SUPERPICK_ITEM;
-	}
+        return item != null && item.getTypeId() == Defaults.SUPERPICK_ITEM;
+    }
 
 	@Override
 	public boolean valid(){
@@ -336,7 +340,7 @@ public class SpleefArena extends Arena{
 		return "ba-spleef-"+getName().toLowerCase() +"-"+layer;
 	}
 
-	public void setRegion(Player p, Selection sel, int layer) throws Exception, SpleefException {
+	public void setRegion(Player p, Selection sel, int layer) throws Exception {
 		final String layerName = getRegionName(layer);
 		if (layerNames == null)
 			layerNames = new CopyOnWriteArrayList<String>();
@@ -350,7 +354,7 @@ public class SpleefArena extends Arena{
 		worldName = sel.getWorld().getName();
 		WorldGuardUtil.createProtectedRegion(p, layerName);
 		ProtectedRegion pr = WorldGuardUtil.getRegion(sel.getWorld(), layerName);
-		pr.setPriority(11); /// some relatively high priority
+		pr.setPriority(11); /// some priority higher than the default 0
 		pr.setFlag(DefaultFlag.PVP,State.DENY);
 		/// allow them to build on the layer, we will handle stopping/allowing block breaks
 		pr.setFlag(DefaultFlag.BUILD,State.ALLOW);
@@ -359,7 +363,7 @@ public class SpleefArena extends Arena{
 		initProtectedRegions();
 	}
 
-	public void setRegen(int layer, Integer regenTime) throws Exception, SpleefException {
+	public void setRegen(int layer, Integer regenTime) throws Exception {
 		if (layerNames == null || layer >= layerNames.size()){
 			throw new SpleefException("&cYou need to set layer " + layer +" before adding regen to it! "+
 					"&6/spleef setLayer <arena> " + layer);
@@ -371,7 +375,7 @@ public class SpleefArena extends Arena{
 			regenTimes.put(layerName, regenTime);}
 	}
 
-	public void deleteRegen(int layer) throws Exception, SpleefException {
+	public void deleteRegen(int layer) throws Exception {
 		if (layerNames == null || layer >= layerNames.size()){
 			throw new SpleefException("&cYou need to set layer " + layer +" before deleting regen !"+
 					"&6/spleef setLayer <arena> " + layer);

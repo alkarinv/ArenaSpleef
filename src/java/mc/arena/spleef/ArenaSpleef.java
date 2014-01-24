@@ -55,7 +55,8 @@ public class ArenaSpleef extends JavaPlugin {
 		Defaults.SUPERPICK_ITEM = config.getInt("superpick_item", Defaults.SUPERPICK_ITEM);
 		Defaults.MAX_LAYERS = config.getInt("maxLayers", Defaults.MAX_LAYERS);
 		Defaults.MAX_REGION_SIZE = config.getInt("maxRegionSize", Defaults.MAX_REGION_SIZE);
-		Defaults.ONBREAK_BLOCK_DROPS = config.getBoolean("noBlockDrops", Defaults.ONBREAK_BLOCK_DROPS);
+		Defaults.STOP_BLOCKBREAK_DROPS = config.getBoolean("noBlockDrops", Defaults.STOP_BLOCKBREAK_DROPS);
+		Defaults.HEIGHT_LOSS = config.getBoolean("heightLoss", Defaults.HEIGHT_LOSS);
 
 	}
 }

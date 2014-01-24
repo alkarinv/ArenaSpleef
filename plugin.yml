@@ -1,6 +1,7 @@
-name: ArenaSpleef
+name: ${project.name}
+version: ${project.version}
+
 main: mc.arena.spleef.ArenaSpleef
-version: 1.4.4
 depend: [BattleArena, WorldGuard, WorldEdit]
 authors: [alkarin_v]
 
@@ -8,4 +9,3 @@ commands:
    spleef:
    espleef:
        aliases: [eventspleef]
-   
