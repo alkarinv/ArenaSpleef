@@ -143,7 +143,9 @@ public class SpleefArena extends Arena{
 	}
 
 	private void startIslandTimers(){
-		islandTimer = Bukkit.getScheduler().scheduleSyncRepeatingTask(mc.arena.spleef.ArenaSpleef.getSelf(), new Runnable(){
+        if (ISLAND_FAILS <= 0)
+            return;
+        islandTimer = Bukkit.getScheduler().scheduleSyncRepeatingTask(mc.arena.spleef.ArenaSpleef.getSelf(), new Runnable(){
 			@Override
 			public void run() {
 				Collection<ArenaPlayer> players = getMatch().getAlivePlayers();

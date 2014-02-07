@@ -58,5 +58,13 @@ public class ArenaSpleef extends JavaPlugin {
 		Defaults.STOP_BLOCKBREAK_DROPS = config.getBoolean("noBlockDrops", Defaults.STOP_BLOCKBREAK_DROPS);
 		Defaults.HEIGHT_LOSS = config.getBoolean("heightLoss", Defaults.HEIGHT_LOSS);
 
+        if (config.getBoolean("islanding.enable", true)){
+            SpleefArena.ISLAND_FAILS = config.getInt("islanding.fails", SpleefArena.ISLAND_FAILS);
+            SpleefArena.ISLAND_RADIUS = config.getInt("islanding.radius", SpleefArena.ISLAND_RADIUS);
+        } else {
+            SpleefArena.ISLAND_FAILS = -1;
+        }
+
+
 	}
 }
