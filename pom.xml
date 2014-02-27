@@ -4,7 +4,7 @@
     <groupId>mc.alk.arena</groupId>
     <artifactId>ArenaSpleef</artifactId>
     <packaging>jar</packaging>
-    <version>1.4.9.1</version>
+    <version>1.4.9.2</version>
     <name>ArenaSpleef</name>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -31,13 +31,13 @@
         <dependency>
             <groupId>org.bukkit</groupId>
             <artifactId>bukkit</artifactId>
-            <version>1.6.4-R0.1-SNAPSHOT</version>
+            <version>1.7.2-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>mc.alk</groupId>
             <artifactId>BattleArena</artifactId>
-            <version>[3.9.5,)</version>
+            <version>3.9.6.7</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
