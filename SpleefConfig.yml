@@ -1,43 +1,53 @@
-configVersion: 2.0
-
-## for more help configuring see the wiki
-## https://github.com/alkarinv/BattleArena/wiki
-## Change this file to customize your match
-
 Spleef:
-    enabled: true
-    prefix: "&b[Spleef]&e"
-    type: Spleef
+  name: Spleef
+  command: Spleef
+  prefix: '&b[Spleef]&e'
+  signDisplayName: '&b[Spleef]&e'
+  gameSize:
+    nTeams: 2+
+    teamSize: '1'
+  nLives: '1'
+  victoryCondition: LASTMANSTANDING
+  tracking:
     database: Spleef
     rated: true
-    joinType: Queue
-    victoryCondition: LastManStanding
-    nTeams: 2+
-    teamSize: 1
-    defaults:
-        options: [woolTeams]
-    preReqs:
-        options: [clearInventory]
-    onEnter:
-        options: [storeAll]
-    onLeave:
-        options: [restoreAll]
-    onPrestart:
-        options: []
-    onStart:
-        options: [teleportIn, pvpOff]
-    onSpawn:
-        options: [deEnchant, giveItems, hunger=20, health=20]
-        items: # ignored if options doesnt have "giveItems"
-        - diamond_spade: 1
-        - shear: 1
-    onDeath:
-        options: [clearInventory]
-    onVictory:
-        options: [invincible]
-    onComplete:
-        options: [teleportOut, clearInventory]
-    winner:
-        options: [health=20, hunger=20]
-    losers:
-        options: []
+    useTrackerMessages: false
+  arenaType: Spleef
+  arenaClass: SpleefArena
+  defaults:
+    options:
+    - woolTeams
+  onEnter:
+    options:
+    - STOREALL
+  onLeave:
+    options:
+    - RESTOREALL
+  preReqs:
+    options:
+    - clearInventory
+  onStart:
+    options:
+    - teleportIn
+    - pvpOff
+  onVictory:
+    options:
+    - invincible
+  onComplete:
+    options:
+    - teleportOut
+    - clearInventory
+  onSpawn:
+    giveItems:
+    - DIAMOND_SPADE 1
+    options:
+    - health=20.0
+    - hunger=20
+    - deEnchant
+  onDeath:
+    options:
+    - clearInventory
+  winners:
+    options:
+    - health=20.0
+    - hunger=20
