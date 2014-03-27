@@ -13,7 +13,7 @@ import mc.alk.arena.objects.options.TransitionOption;
 import mc.alk.arena.serializers.Persist;
 import mc.alk.arena.util.Log;
 import mc.alk.arena.util.MessageUtil;
-import mc.alk.arena.util.WorldGuardUtil;
+import mc.alk.arena.util.plugins.WorldGuardUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -187,6 +187,7 @@ public class SpleefArena extends Arena{
             Bukkit.getScheduler().cancelTask(timerid);}
         // Set the timer to regenLayerTimes the blocks if someone has walled themselves off, or people cant reach each other
         timerid = Bukkit.getScheduler().scheduleSyncRepeatingTask(mc.arena.spleef.ArenaSpleef.getSelf(), new Runnable(){
+            @Override
             public void run() {
                 regenLayer(pr);
             }
@@ -238,8 +239,7 @@ public class SpleefArena extends Arena{
     public void onPlayerInteract(PlayerInteractEvent event){
         if (regions == null || !mc.arena.spleef.Defaults.SUPERPICK || event.getAction() != Action.LEFT_CLICK_BLOCK ||
                 !superPickItem(event.getPlayer().getItemInHand()) ||
-                getMatch().getParams().getTransitionOptions().hasOptionAt(
-                        this.getMatchState(), TransitionOption.BLOCKBREAKOFF))
+                getMatch().getParams().hasOptionAt(getMatchState(), TransitionOption.BLOCKBREAKOFF))
             return;
         Location l = event.getClickedBlock().getLocation();
         for (ProtectedRegion pr: regions){

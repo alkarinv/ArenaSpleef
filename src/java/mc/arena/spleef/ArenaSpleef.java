@@ -4,14 +4,14 @@ import mc.alk.arena.BattleArena;
 import mc.alk.arena.util.Log;
 import mc.alk.arena.util.WorldGuardUtil;
 import mc.arena.spleef.executors.SpleefExecutor;
-
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class ArenaSpleef extends JavaPlugin {
 	static ArenaSpleef plugin;  /// our plugin
+    static final int bukkitID = 44785; /// https://api.curseforge.com/servermods/projects?search=arenaspleef
 
-	@Override
+    @Override
 	public void onEnable(){
 		plugin = this;
 		/// We need worldguard/worldedit, load them in
@@ -26,7 +26,11 @@ public class ArenaSpleef extends JavaPlugin {
 
 		/// Load the Config
 		loadConfig();
-
+//        try{
+//            BattleArena.update(this, bukkitID, getFile(),
+//                    UpdateOption.fromString(getConfig().getString("autoUpdate")),
+//                    AnnounceUpdateOption.NONE);
+//        } catch(Throwable e){/* do nothing */}
 		Log.info("[" + getName()+ "] v" + getDescription().getVersion()+ " enabled!");
 	}
 
