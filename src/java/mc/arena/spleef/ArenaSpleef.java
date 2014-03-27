@@ -2,7 +2,7 @@ package mc.arena.spleef;
 
 import mc.alk.arena.BattleArena;
 import mc.alk.arena.util.Log;
-import mc.alk.arena.util.WorldGuardUtil;
+import mc.alk.arena.util.plugins.WorldGuardUtil;
 import mc.arena.spleef.executors.SpleefExecutor;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -15,7 +15,7 @@ public class ArenaSpleef extends JavaPlugin {
 	public void onEnable(){
 		plugin = this;
 		/// We need worldguard/worldedit, load them in
-		if (!WorldGuardUtil.hasWorldGuard){
+		if (!WorldGuardUtil.hasWorldGuard()){
 			Log.err("Arena Spleef needs WorldEdit and WorldGuard to function!");
 			setEnabled(false);
 			return;
