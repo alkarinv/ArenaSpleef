@@ -2,7 +2,7 @@ package mc.arena.spleef;
 
 import mc.alk.arena.BattleArena;
 import mc.alk.arena.objects.arenas.Arena;
-import mc.alk.arena.util.WorldEditUtil;
+import mc.alk.arena.util.plugins.WorldEditUtil;
 
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
