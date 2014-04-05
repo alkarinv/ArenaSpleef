@@ -239,7 +239,7 @@ public class SpleefArena extends Arena{
     public void onPlayerInteract(PlayerInteractEvent event){
         if (regions == null || !mc.arena.spleef.Defaults.SUPERPICK || event.getAction() != Action.LEFT_CLICK_BLOCK ||
                 !superPickItem(event.getPlayer().getItemInHand()) ||
-                getMatch().getParams().hasOptionAt(getMatchState(), TransitionOption.BLOCKBREAKOFF))
+                getMatch().getParams().hasOptionAt(match.getState(), TransitionOption.BLOCKBREAKOFF))
             return;
         Location l = event.getClickedBlock().getLocation();
         for (ProtectedRegion pr: regions){
