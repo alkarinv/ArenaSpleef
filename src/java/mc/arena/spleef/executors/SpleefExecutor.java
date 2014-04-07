@@ -11,12 +11,12 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 public class SpleefExecutor extends CustomCommandExecutor{
-	@MCCommand(cmds={"setLayer"}, inGame=true, admin=true)
+	@MCCommand(cmds={"setLayer"}, admin=true)
 	public boolean setLayer(Player sender, Arena arena) {
 		return setLayer(sender,arena,1);
 	}
 
-	@MCCommand(cmds={"setLayer"}, inGame=true, admin=true, order=1)
+	@MCCommand(cmds={"setLayer"}, admin=true, order=1)
 	public boolean setLayer(Player sender, Arena arena, Integer layerIndex) {
 		try{
 			SpleefArenaEditor sae = new SpleefArenaEditor(arena);

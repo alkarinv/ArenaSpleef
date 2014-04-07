@@ -6,6 +6,7 @@ import com.sk89q.worldguard.protection.flags.StateFlag.State;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 import mc.alk.arena.objects.ArenaPlayer;
 import mc.alk.arena.objects.MatchState;
+import mc.alk.arena.objects.StateOption;
 import mc.alk.arena.objects.arenas.Arena;
 import mc.alk.arena.objects.events.ArenaEventHandler;
 import mc.alk.arena.objects.events.EventPriority;
@@ -191,8 +192,7 @@ public class SpleefArena extends Arena{
             public void run() {
                 regenLayer(pr);
             }
-        }, (long) (time*20L*mc.alk.arena.Defaults.TICK_MULT),
-                (long) (time*20L*mc.alk.arena.Defaults.TICK_MULT));
+        }, time*20L, time*20L);
         regenTimers.put(pr.getId(), timerid);
     }
 
@@ -239,7 +239,8 @@ public class SpleefArena extends Arena{
     public void onPlayerInteract(PlayerInteractEvent event){
         if (regions == null || !mc.arena.spleef.Defaults.SUPERPICK || event.getAction() != Action.LEFT_CLICK_BLOCK ||
                 !superPickItem(event.getPlayer().getItemInHand()) ||
-                getMatch().getParams().hasOptionAt(match.getState(), TransitionOption.BLOCKBREAKOFF))
+                getMatch().getParams().hasOptionAt(match.getState(),
+                        (StateOption) TransitionOption.BLOCKBREAKOFF))
             return;
         Location l = event.getClickedBlock().getLocation();
         for (ProtectedRegion pr: regions){

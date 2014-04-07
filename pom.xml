@@ -4,7 +4,7 @@
     <groupId>mc.alk.arena</groupId>
     <artifactId>ArenaSpleef</artifactId>
     <packaging>jar</packaging>
-    <version>1.5.0.2</version>
+    <version>1.5.1</version>
     <name>ArenaSpleef</name>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -37,7 +37,7 @@
         <dependency>
             <groupId>mc.alk</groupId>
             <artifactId>BattleArena</artifactId>
-            <version>3.9.6.7</version>
+            <version>3.9.7.6</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
